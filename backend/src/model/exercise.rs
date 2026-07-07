@@ -7,8 +7,8 @@ pub struct Exercise {
     pub name: String,
     pub muscle_group: String,
     pub category: String,
-    pub rep_low_range: i32,
-    pub rep_high_range: i32,
+    pub rep_low_range: i64,
+    pub rep_high_range: i64,
 }
 
 #[derive(Deserialize)]
@@ -16,6 +16,6 @@ pub struct CreateExercise {
     pub name: String,
     pub muscle_group: String,
     pub category: String,
-    pub rep_low_range: i32,
-    pub rep_high_range: i32,
+    pub rep_low_range: i64,
+    pub rep_high_range: i64,
 }

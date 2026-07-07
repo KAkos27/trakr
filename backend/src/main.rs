@@ -4,13 +4,13 @@ mod model;
 use anyhow::Result;
 use axum::{
     Router,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
 };
 use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
 use tower_http::cors::CorsLayer;
 
-use crate::controller::exercise_controller;
+use crate::controller::{exercise_controller, workout_controller};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,10 +30,12 @@ async fn main() -> Result<()> {
             "/exercises/create",
             post(exercise_controller::create_exercise),
         )
+        .route("/exercises/{id}", put(exercise_controller::update_exercise))
         .route(
             "/exercises/{id}",
             delete(exercise_controller::delete_exercise),
         )
+        .route("/workouts", get(workout_controller::get_workouts))
         .with_state(pool)
         .layer(CorsLayer::permissive());
 
@@ -46,4 +48,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-
