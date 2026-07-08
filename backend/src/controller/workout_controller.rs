@@ -24,17 +24,10 @@ pub async fn create_workout(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateWorkout>,
 ) -> Result<(StatusCode, Json<Workout>), (StatusCode, String)> {
-    let mut volume = 0.0;
-    let mut estimated_one_rep_max = 0.0;
-
-    if payload.set_type == "working" {
-        volume = payload.weight * payload.reps as f64;
-        estimated_one_rep_max = payload.weight * (1.0 + payload.reps as f64 / 30.0);
-    }
-
     let row = sqlx::query_file_as!(
         WorkoutRow,
         "queries/create_workout.sql",
+        payload.date,
         payload.day,
         payload.exercise_id,
         payload.set_number,
@@ -42,8 +35,8 @@ pub async fn create_workout(
         payload.reps,
         payload.reps_in_reserve,
         payload.set_type,
-        volume,
-        estimated_one_rep_max,
+        calculate_volume(&payload.set_type, &payload.weight, &payload.reps),
+        calculate_one_rep_max(&payload.set_type, &payload.weight, &payload.reps),
         payload.notes,
     )
     .fetch_one(&pool)
@@ -51,6 +44,37 @@ pub async fn create_workout(
     .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     Ok((StatusCode::CREATED, Json(Workout::from(row))))
+}
+
+pub async fn update_workout(
+    State(pool): State<PgPool>,
+    Path(id): Path<i64>,
+    Json(payload): Json<CreateWorkout>,
+) -> Result<Json<Workout>, (StatusCode, String)> {
+    let row = sqlx::query_file_as!(
+        WorkoutRow,
+        "queries/update_workout.sql",
+        id,
+        payload.date,
+        payload.day,
+        payload.exercise_id,
+        payload.set_number,
+        payload.weight,
+        payload.reps,
+        payload.reps_in_reserve,
+        payload.set_type,
+        calculate_volume(&payload.set_type, &payload.weight, &payload.reps),
+        calculate_one_rep_max(&payload.set_type, &payload.weight, &payload.reps),
+        payload.notes
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+
+    match row {
+        Some(row) => Ok(Json(Workout::from(row))),
+        None => Err((StatusCode::NOT_FOUND, "Workout not found!".to_string())),
+    }
 }
 
 pub async fn delete_workout(
@@ -67,4 +91,17 @@ pub async fn delete_workout(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+fn calculate_volume(set_type: &str, weight: &f64, reps: &i64) -> f64 {
+    if set_type != "working" {
+        return 0.0;
+    }
+    weight * *reps as f64
+}
+fn calculate_one_rep_max(set_type: &str, weight: &f64, reps: &i64) -> f64 {
+    if set_type != "working" {
+        return 0.0;
+    }
+    weight * (1.0 + *reps as f64 / 30.0)
 }

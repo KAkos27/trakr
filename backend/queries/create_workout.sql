@@ -1,5 +1,6 @@
 WITH inserted AS (
     INSERT INTO workouts (
+        date,
         day,
         exercise_id,
         set_number,
@@ -11,7 +12,7 @@ WITH inserted AS (
         estimated_one_rep_max,
         notes
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    VALUES (COALESCE($1, CURRENT_DATE), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING
         id,
         date,

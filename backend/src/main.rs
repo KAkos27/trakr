@@ -26,17 +26,15 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/exercises", get(exercise_controller::get_exercises))
-        .route(
-            "/exercises/create",
-            post(exercise_controller::create_exercise),
-        )
+        .route("/exercises", post(exercise_controller::create_exercise))
         .route("/exercises/{id}", put(exercise_controller::update_exercise))
         .route(
             "/exercises/{id}",
             delete(exercise_controller::delete_exercise),
         )
         .route("/workouts", get(workout_controller::get_workouts))
-        .route("/workouts/create", post(workout_controller::create_workout))
+        .route("/workouts", post(workout_controller::create_workout))
+        .route("/workouts/{id}", put(workout_controller::update_workout))
         .route("/workouts/{id}", delete(workout_controller::delete_workout))
         .with_state(pool)
         .layer(CorsLayer::permissive());

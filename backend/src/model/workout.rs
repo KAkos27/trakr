@@ -3,6 +3,21 @@ use sqlx::{prelude::FromRow, types::chrono::NaiveDate};
 
 use crate::model::exercise::Exercise;
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WorkoutDay {
+    Push,
+    Pull,
+    Leg,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SetType {
+    WarmUp,
+    Working,
+}
+
 #[derive(Serialize, FromRow)]
 pub struct Workout {
     pub id: i64,
@@ -21,6 +36,7 @@ pub struct Workout {
 
 #[derive(Deserialize, Serialize, FromRow)]
 pub struct CreateWorkout {
+    pub date: Option<NaiveDate>,
     pub day: String,
     pub exercise_id: i64,
     pub set_number: i64,
