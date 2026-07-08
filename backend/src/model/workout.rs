@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, types::chrono::NaiveDate};
 
 use crate::model::exercise::Exercise;
@@ -16,6 +16,18 @@ pub struct Workout {
     pub set_type: String,
     pub volume: f64,
     pub estimated_one_rep_max: f64,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, FromRow)]
+pub struct CreateWorkout {
+    pub day: String,
+    pub exercise_id: i64,
+    pub set_number: i64,
+    pub weight: f64,
+    pub reps: i64,
+    pub reps_in_reserve: Option<i64>,
+    pub set_type: String,
     pub notes: Option<String>,
 }
 

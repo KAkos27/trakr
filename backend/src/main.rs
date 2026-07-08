@@ -36,6 +36,8 @@ async fn main() -> Result<()> {
             delete(exercise_controller::delete_exercise),
         )
         .route("/workouts", get(workout_controller::get_workouts))
+        .route("/workouts/create", post(workout_controller::create_workout))
+        .route("/workouts/{id}", delete(workout_controller::delete_workout))
         .with_state(pool)
         .layer(CorsLayer::permissive());
 
