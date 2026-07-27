@@ -5,7 +5,7 @@ use axum::{
 };
 use sqlx::PgPool;
 
-use crate::model::workout::{CreateWorkout, Workout, WorkoutRow};
+use crate::model::workout::{CreateWorkout, SetType, Workout, WorkoutRow};
 
 pub async fn get_workouts(
     State(pool): State<PgPool>,
@@ -24,19 +24,23 @@ pub async fn create_workout(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateWorkout>,
 ) -> Result<(StatusCode, Json<Workout>), (StatusCode, String)> {
+    let volume = calculate_volume(&payload.set_type, payload.weight, payload.reps);
+    let estimated_one_rep_max =
+        calculate_one_rep_max(&payload.set_type, payload.weight, payload.reps);
+
     let row = sqlx::query_file_as!(
         WorkoutRow,
         "queries/create_workout.sql",
         payload.date,
-        payload.day,
+        payload.day.as_str(),
         payload.exercise_id,
         payload.set_number,
         payload.weight,
         payload.reps,
         payload.reps_in_reserve,
-        payload.set_type,
-        calculate_volume(&payload.set_type, &payload.weight, &payload.reps),
-        calculate_one_rep_max(&payload.set_type, &payload.weight, &payload.reps),
+        payload.set_type.as_str(),
+        volume,
+        estimated_one_rep_max,
         payload.notes,
     )
     .fetch_one(&pool)
@@ -51,20 +55,24 @@ pub async fn update_workout(
     Path(id): Path<i64>,
     Json(payload): Json<CreateWorkout>,
 ) -> Result<Json<Workout>, (StatusCode, String)> {
+    let volume = calculate_volume(&payload.set_type, payload.weight, payload.reps);
+    let estimated_one_rep_max =
+        calculate_one_rep_max(&payload.set_type, payload.weight, payload.reps);
+
     let row = sqlx::query_file_as!(
         WorkoutRow,
         "queries/update_workout.sql",
         id,
         payload.date,
-        payload.day,
+        payload.day.as_str(),
         payload.exercise_id,
         payload.set_number,
         payload.weight,
         payload.reps,
         payload.reps_in_reserve,
-        payload.set_type,
-        calculate_volume(&payload.set_type, &payload.weight, &payload.reps),
-        calculate_one_rep_max(&payload.set_type, &payload.weight, &payload.reps),
+        payload.set_type.as_str(),
+        volume,
+        estimated_one_rep_max,
         payload.notes
     )
     .fetch_optional(&pool)
@@ -93,15 +101,18 @@ pub async fn delete_workout(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn calculate_volume(set_type: &str, weight: &f64, reps: &i64) -> f64 {
-    if set_type != "working" {
+fn calculate_volume(set_type: &SetType, weight: f64, reps: i64) -> f64 {
+    if !set_type.is_working() {
         return 0.0;
     }
-    weight * *reps as f64
+
+    weight * reps as f64
 }
-fn calculate_one_rep_max(set_type: &str, weight: &f64, reps: &i64) -> f64 {
-    if set_type != "working" {
+
+fn calculate_one_rep_max(set_type: &SetType, weight: f64, reps: i64) -> f64 {
+    if !set_type.is_working() {
         return 0.0;
     }
-    weight * (1.0 + *reps as f64 / 30.0)
+
+    weight * (1.0 + reps as f64 / 30.0)
 }

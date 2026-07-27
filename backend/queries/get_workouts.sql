@@ -14,9 +14,7 @@ SELECT
     e.id AS exercise_id,
     e.name AS exercise_name,
     e.muscle_group AS exercise_muscle_group,
-    e.category AS exercise_category,
-    e.rep_low_range AS exercise_rep_low_range,
-    e.rep_high_range AS exercise_rep_high_range
+    e.category AS exercise_category
 FROM workouts w
 INNER JOIN exercises e ON w.exercise_id = e.id
 ORDER BY w.date;

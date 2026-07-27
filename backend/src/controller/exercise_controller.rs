@@ -28,8 +28,6 @@ pub async fn create_exercise(
         payload.name,
         payload.muscle_group,
         payload.category,
-        payload.rep_low_range,
-        payload.rep_high_range
     )
     .fetch_one(&pool)
     .await
@@ -50,8 +48,6 @@ pub async fn update_exercise(
         payload.name,
         payload.muscle_group,
         payload.category,
-        payload.rep_low_range,
-        payload.rep_high_range
     )
     .fetch_optional(&pool)
     .await

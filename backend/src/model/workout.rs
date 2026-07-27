@@ -3,7 +3,7 @@ use sqlx::{prelude::FromRow, types::chrono::NaiveDate};
 
 use crate::model::exercise::Exercise;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WorkoutDay {
     Push,
@@ -11,11 +11,34 @@ pub enum WorkoutDay {
     Leg,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+impl WorkoutDay {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Push => "push",
+            Self::Pull => "pull",
+            Self::Leg => "leg",
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SetType {
     WarmUp,
     Working,
+}
+
+impl SetType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::WarmUp => "warm-up",
+            Self::Working => "working",
+        }
+    }
+
+    pub fn is_working(&self) -> bool {
+        matches!(self, Self::Working)
+    }
 }
 
 #[derive(Serialize, FromRow)]
@@ -34,16 +57,16 @@ pub struct Workout {
     pub notes: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Deserialize, Serialize)]
 pub struct CreateWorkout {
     pub date: Option<NaiveDate>,
-    pub day: String,
+    pub day: WorkoutDay,
     pub exercise_id: i64,
     pub set_number: i64,
     pub weight: f64,
     pub reps: i64,
     pub reps_in_reserve: Option<i64>,
-    pub set_type: String,
+    pub set_type: SetType,
     pub notes: Option<String>,
 }
 
@@ -64,8 +87,6 @@ pub struct WorkoutRow {
     pub exercise_name: String,
     pub exercise_muscle_group: String,
     pub exercise_category: String,
-    pub exercise_rep_low_range: i64,
-    pub exercise_rep_high_range: i64,
 }
 
 impl From<WorkoutRow> for Workout {
@@ -87,8 +108,6 @@ impl From<WorkoutRow> for Workout {
                 name: row.exercise_name,
                 muscle_group: row.exercise_muscle_group,
                 category: row.exercise_category,
-                rep_low_range: row.exercise_rep_low_range,
-                rep_high_range: row.exercise_rep_high_range,
             },
         }
     }
