@@ -247,6 +247,7 @@ function App() {
       });
       setWorkoutForm({
         ...emptyWorkoutForm,
+        date: normalizedDate,
         day: workoutForm.day,
         exercise_id: workoutForm.exercise_id,
         set_number: String(Number(workoutForm.set_number || 0) + 1),
@@ -358,8 +359,12 @@ function App() {
   const selectedPlannerSessions = selectedPlannerExercise
     ? buildExerciseSessions(selectedPlannerExercise, workouts)
     : [];
-  const lastPlannerSession = selectedPlannerSessions[0];
-  const previousPlannerSession = selectedPlannerSessions[1];
+  const currentPlannerSessionDate = normalizeDateInput(workoutForm.date) || todayDateString();
+  const referencePlannerSessions = selectedPlannerSessions.filter(
+    (session) => session.date !== currentPlannerSessionDate || session.day !== workoutForm.day,
+  );
+  const lastPlannerSession = referencePlannerSessions[0];
+  const previousPlannerSession = referencePlannerSessions[1];
   const overallProgress = buildOverallProgress(workouts);
   const selectedExerciseDetail = exercises.find((exercise) => exercise.id === selectedExerciseDetailId);
   const selectedExerciseDetailWorkouts = selectedExerciseDetail
