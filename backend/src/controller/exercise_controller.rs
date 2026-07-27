@@ -10,7 +10,7 @@ use crate::model::exercise::{CreateExercise, Exercise};
 pub async fn get_exercises(
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Exercise>>, (StatusCode, String)> {
-    let exercises = sqlx::query_file_as!(Exercise, "queries/get_exercises.sql")
+    let exercises = sqlx::query_as::<_, Exercise>(include_str!("../../queries/get_exercises.sql"))
         .fetch_all(&pool)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
@@ -22,16 +22,13 @@ pub async fn create_exercise(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateExercise>,
 ) -> Result<(StatusCode, Json<Exercise>), (StatusCode, String)> {
-    let exercise = sqlx::query_file_as!(
-        Exercise,
-        "queries/create_exercise.sql",
-        payload.name,
-        payload.muscle_group,
-        payload.category,
-    )
-    .fetch_one(&pool)
-    .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+    let exercise = sqlx::query_as::<_, Exercise>(include_str!("../../queries/create_exercise.sql"))
+        .bind(payload.name)
+        .bind(payload.muscle_group)
+        .bind(payload.category)
+        .fetch_one(&pool)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     Ok((StatusCode::CREATED, Json(exercise)))
 }
@@ -41,17 +38,14 @@ pub async fn update_exercise(
     Path(id): Path<i64>,
     Json(payload): Json<CreateExercise>,
 ) -> Result<Json<Exercise>, (StatusCode, String)> {
-    let exercise = sqlx::query_file_as!(
-        Exercise,
-        "queries/update_exercise.sql",
-        id,
-        payload.name,
-        payload.muscle_group,
-        payload.category,
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+    let exercise = sqlx::query_as::<_, Exercise>(include_str!("../../queries/update_exercise.sql"))
+        .bind(id)
+        .bind(payload.name)
+        .bind(payload.muscle_group)
+        .bind(payload.category)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     match exercise {
         Some(exercise) => Ok(Json(exercise)),
@@ -63,7 +57,8 @@ pub async fn delete_exercise(
     State(pool): State<PgPool>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let result = sqlx::query_file!("queries/delete_exercise.sql", id)
+    let result = sqlx::query(include_str!("../../queries/delete_exercise.sql"))
+        .bind(id)
         .execute(&pool)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;

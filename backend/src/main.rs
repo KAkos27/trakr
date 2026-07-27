@@ -3,10 +3,11 @@ mod model;
 
 use anyhow::{Context, Result};
 use axum::{
-    Router, middleware,
+    Router,
     body::Body,
     extract::{Request, State},
     http::{StatusCode, header},
+    middleware,
     middleware::Next,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},

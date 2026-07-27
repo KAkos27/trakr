@@ -10,7 +10,7 @@ use crate::model::workout::{CreateWorkout, SetType, Workout, WorkoutRow};
 pub async fn get_workouts(
     State(pool): State<PgPool>,
 ) -> Result<Json<Vec<Workout>>, (StatusCode, String)> {
-    let row = sqlx::query_file_as!(WorkoutRow, "queries/get_workouts.sql")
+    let row = sqlx::query_as::<_, WorkoutRow>(include_str!("../../queries/get_workouts.sql"))
         .fetch_all(&pool)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
@@ -28,24 +28,21 @@ pub async fn create_workout(
     let estimated_one_rep_max =
         calculate_one_rep_max(&payload.set_type, payload.weight, payload.reps);
 
-    let row = sqlx::query_file_as!(
-        WorkoutRow,
-        "queries/create_workout.sql",
-        payload.date,
-        payload.day.as_str(),
-        payload.exercise_id,
-        payload.set_number,
-        payload.weight,
-        payload.reps,
-        payload.reps_in_reserve,
-        payload.set_type.as_str(),
-        volume,
-        estimated_one_rep_max,
-        payload.notes,
-    )
-    .fetch_one(&pool)
-    .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+    let row = sqlx::query_as::<_, WorkoutRow>(include_str!("../../queries/create_workout.sql"))
+        .bind(payload.date)
+        .bind(payload.day.as_str())
+        .bind(payload.exercise_id)
+        .bind(payload.set_number)
+        .bind(payload.weight)
+        .bind(payload.reps)
+        .bind(payload.reps_in_reserve)
+        .bind(payload.set_type.as_str())
+        .bind(volume)
+        .bind(estimated_one_rep_max)
+        .bind(payload.notes)
+        .fetch_one(&pool)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     Ok((StatusCode::CREATED, Json(Workout::from(row))))
 }
@@ -59,25 +56,22 @@ pub async fn update_workout(
     let estimated_one_rep_max =
         calculate_one_rep_max(&payload.set_type, payload.weight, payload.reps);
 
-    let row = sqlx::query_file_as!(
-        WorkoutRow,
-        "queries/update_workout.sql",
-        id,
-        payload.date,
-        payload.day.as_str(),
-        payload.exercise_id,
-        payload.set_number,
-        payload.weight,
-        payload.reps,
-        payload.reps_in_reserve,
-        payload.set_type.as_str(),
-        volume,
-        estimated_one_rep_max,
-        payload.notes
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+    let row = sqlx::query_as::<_, WorkoutRow>(include_str!("../../queries/update_workout.sql"))
+        .bind(id)
+        .bind(payload.date)
+        .bind(payload.day.as_str())
+        .bind(payload.exercise_id)
+        .bind(payload.set_number)
+        .bind(payload.weight)
+        .bind(payload.reps)
+        .bind(payload.reps_in_reserve)
+        .bind(payload.set_type.as_str())
+        .bind(volume)
+        .bind(estimated_one_rep_max)
+        .bind(payload.notes)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     match row {
         Some(row) => Ok(Json(Workout::from(row))),
@@ -89,7 +83,8 @@ pub async fn delete_workout(
     State(pool): State<PgPool>,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let query = sqlx::query_file!("queries/delete_workout.sql", id)
+    let query = sqlx::query(include_str!("../../queries/delete_workout.sql"))
+        .bind(id)
         .execute(&pool)
         .await
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;

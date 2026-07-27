@@ -70,6 +70,7 @@ pub struct CreateWorkout {
     pub notes: Option<String>,
 }
 
+#[derive(FromRow)]
 pub struct WorkoutRow {
     pub id: i64,
     pub date: NaiveDate,
