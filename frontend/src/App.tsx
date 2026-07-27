@@ -212,12 +212,14 @@ function App() {
   async function handleWorkoutSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const payload = buildWorkoutPayload(workoutForm);
+    const normalizedDate = normalizeDateInput(workoutForm.date);
 
-    if (workoutForm.date && !isValidDateString(workoutForm.date)) {
-      setError("Date must use YYYY-MM-DD format.");
+    if (normalizedDate === null) {
+      setError("Date must use YYYY-MM-DD or YYYYMMDD format.");
       return;
     }
+
+    const payload = buildWorkoutPayload({ ...workoutForm, date: normalizedDate });
 
     if (!payload.exercise_id || payload.weight <= 0 || payload.reps <= 0) {
       setError("Exercise, weight, and reps are required for a workout set.");
@@ -301,6 +303,7 @@ function App() {
 
   function startWorkoutEdit(workout: Workout) {
     setEditingWorkoutId(workout.id);
+    setActiveView("log");
     setWorkoutForm({
       date: workout.date,
       day: normalizeDay(workout.day),
@@ -499,8 +502,7 @@ function App() {
               <div className="date-input-row">
                 <input
                   inputMode="numeric"
-                  pattern="\d{4}-\d{2}-\d{2}"
-                  placeholder="YYYY-MM-DD"
+                  placeholder="YYYYMMDD"
                   value={workoutForm.date}
                   onChange={(event) => setWorkoutForm({ ...workoutForm, date: event.target.value })}
                 />
@@ -512,6 +514,7 @@ function App() {
                   Today
                 </button>
               </div>
+              <span className="field-hint">Example: 20260726 also works.</span>
             </label>
             <label>
               Day
@@ -1048,6 +1051,20 @@ function todayDateString() {
   const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function normalizeDateInput(value: string) {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  const dateString = /^\d{8}$/.test(trimmedValue)
+    ? `${trimmedValue.slice(0, 4)}-${trimmedValue.slice(4, 6)}-${trimmedValue.slice(6, 8)}`
+    : trimmedValue;
+
+  return isValidDateString(dateString) ? dateString : null;
 }
 
 function isValidDateString(value: string) {
