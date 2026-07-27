@@ -389,8 +389,93 @@ button:disabled {
 
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.detail-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.detail-metrics {
+  margin-bottom: 14px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.detail-section {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.detail-section-heading,
+.session-card,
+.set-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-section h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 18px;
+}
+
+.session-list,
+.set-list {
+  display: grid;
+  gap: 8px;
+}
+
+.session-card,
+.set-card {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--metric-bg);
+}
+
+.session-card > div,
+.set-card > div {
+  min-width: 0;
+}
+
+.session-card strong,
+.set-card strong {
+  display: block;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.session-card span,
+.set-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.set-card > span {
+  color: var(--text-strong);
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .log-heading {
@@ -728,6 +813,10 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
   .planner-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -784,6 +873,11 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .detail-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .card-actions {
     justify-content: start;
   }
@@ -818,5 +912,15 @@ button:disabled {
 
   .panel-tools {
     justify-content: stretch;
+  }
+
+  .session-card,
+  .set-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .set-card > span {
+    white-space: normal;
   }
 }

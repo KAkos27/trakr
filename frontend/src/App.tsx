@@ -66,7 +66,7 @@ type PlannerTarget = {
 
 type ChartMode = "both" | "volume" | "weight";
 type WeightUnit = "kg" | "lbs";
-type AppView = "dashboard" | "log" | "exercises" | "history";
+type AppView = "dashboard" | "log" | "exercises" | "history" | "exercise-detail";
 
 const POUNDS_PER_KILOGRAM = 2.2046226218;
 
@@ -102,6 +102,7 @@ function App() {
   const [workoutSearch, setWorkoutSearch] = useState("");
   const [chartMode, setChartMode] = useState<ChartMode>("both");
   const [activeView, setActiveView] = useState<AppView>("dashboard");
+  const [selectedExerciseDetailId, setSelectedExerciseDetailId] = useState<number | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(hasAuthToken);
   const [isLoading, setIsLoading] = useState(hasAuthToken);
   const [isSaving, setIsSaving] = useState(false);
@@ -273,6 +274,10 @@ function App() {
         setEditingExerciseId(null);
         setExerciseForm(emptyExerciseForm);
       }
+      if (selectedExerciseDetailId === id) {
+        setSelectedExerciseDetailId(null);
+        setActiveView("exercises");
+      }
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -294,11 +299,17 @@ function App() {
 
   function startExerciseEdit(exercise: Exercise) {
     setEditingExerciseId(exercise.id);
+    setActiveView("exercises");
     setExerciseForm({
       name: exercise.name,
       muscle_group: exercise.muscle_group,
       category: normalizeCategory(exercise.category),
     });
+  }
+
+  function openExerciseDetail(exercise: Exercise) {
+    setSelectedExerciseDetailId(exercise.id);
+    setActiveView("exercise-detail");
   }
 
   function startWorkoutEdit(workout: Workout) {
@@ -350,6 +361,20 @@ function App() {
   const lastPlannerSession = selectedPlannerSessions[0];
   const previousPlannerSession = selectedPlannerSessions[1];
   const overallProgress = buildOverallProgress(workouts);
+  const selectedExerciseDetail = exercises.find((exercise) => exercise.id === selectedExerciseDetailId);
+  const selectedExerciseDetailWorkouts = selectedExerciseDetail
+    ? workouts.filter((workout) => workout.exercise.id === selectedExerciseDetail.id).toSorted(sortWorkouts)
+    : [];
+  const selectedExerciseDetailWorkingSets = selectedExerciseDetailWorkouts.filter((workout) => workout.set_type === "working");
+  const selectedExerciseDetailProgress = selectedExerciseDetail
+    ? buildExerciseProgress(selectedExerciseDetail, workouts)
+    : [];
+  const selectedExerciseDetailSessions = selectedExerciseDetail
+    ? buildExerciseSessions(selectedExerciseDetail, workouts)
+    : [];
+  const selectedExerciseDetailVolume = selectedExerciseDetailWorkingSets.reduce((sum, workout) => sum + workout.volume, 0);
+  const selectedExerciseDetailMaxWeight = selectedExerciseDetailWorkingSets.reduce((max, workout) => Math.max(max, workout.weight), 0);
+  const selectedExerciseDetailBestOneRepMax = selectedExerciseDetailWorkingSets.reduce((max, workout) => Math.max(max, workout.estimated_one_rep_max), 0);
   const activeFilterCount = [
     selectedDay !== "all",
     selectedExerciseId !== "all",
@@ -388,7 +413,7 @@ function App() {
           ["history", "History"],
         ] as const).map(([view, label]) => (
           <button
-            className={activeView === view ? "nav-button active" : "nav-button"}
+            className={activeView === view || (view === "exercises" && activeView === "exercise-detail") ? "nav-button active" : "nav-button"}
             key={view}
             type="button"
             onClick={() => setActiveView(view)}
@@ -690,7 +715,7 @@ function App() {
         ) : null}
       </section> : null}
 
-      {activeView === "exercises" || activeView === "history" ? <section className="content-grid single-panel">
+      {activeView === "exercises" || activeView === "history" || activeView === "exercise-detail" ? <section className="content-grid single-panel">
         {activeView === "exercises" ? (
         <div className="panel">
           <div className="panel-heading">
@@ -728,6 +753,7 @@ function App() {
                   </div>
                   <span className="pill">{exercise.category}</span>
                   <div className="card-actions">
+                    <button className="ghost-button" type="button" onClick={() => openExerciseDetail(exercise)}>Details</button>
                     <button className="ghost-button" type="button" onClick={() => startExerciseEdit(exercise)}>Edit</button>
                     <button className="ghost-button" type="button" onClick={() => {
                       setWorkoutForm((form) => ({ ...form, exercise_id: exercise.id.toString() }));
@@ -740,6 +766,89 @@ function App() {
               );
             })}
           </div>
+        </div>
+        ) : null}
+
+        {activeView === "exercise-detail" ? (
+        <div className="panel exercise-detail-panel">
+          {selectedExerciseDetail ? (
+            <>
+              <div className="panel-heading detail-heading">
+                <div>
+                  <p className="eyebrow">Exercise detail</p>
+                  <h2>{selectedExerciseDetail.name}</h2>
+                  <p className="detail-subtitle">{selectedExerciseDetail.muscle_group} · {selectedExerciseDetail.category}</p>
+                </div>
+                <div className="panel-tools">
+                  <button className="ghost-button" type="button" onClick={() => setActiveView("exercises")}>Back</button>
+                  <button className="ghost-button" type="button" onClick={() => startExerciseEdit(selectedExerciseDetail)}>Edit</button>
+                  <button className="ghost-button" type="button" onClick={() => {
+                    setWorkoutForm((form) => ({ ...form, exercise_id: selectedExerciseDetail.id.toString() }));
+                    setActiveView("log");
+                  }}>Plan</button>
+                </div>
+              </div>
+
+              <div className="detail-metrics metric-strip">
+                <Metric label="Working sets" value={selectedExerciseDetailWorkingSets.length.toString()} />
+                <Metric label="Volume" value={formatNumber(selectedExerciseDetailVolume)} />
+                <Metric label="Max weight" value={selectedExerciseDetailMaxWeight ? `${formatNumber(selectedExerciseDetailMaxWeight)} kg` : "-"} />
+                <Metric label="Best est. 1RM" value={selectedExerciseDetailBestOneRepMax ? `${formatNumber(selectedExerciseDetailBestOneRepMax)} kg` : "-"} />
+              </div>
+
+              <ProgressChart mode={chartMode} points={selectedExerciseDetailProgress} title={selectedExerciseDetail.name} />
+
+              <div className="detail-grid">
+                <section className="detail-section">
+                  <div className="detail-section-heading">
+                    <h3>Recent sessions</h3>
+                    <span className="pill">{selectedExerciseDetailSessions.length} total</span>
+                  </div>
+                  <div className="session-list">
+                    {selectedExerciseDetailSessions.length === 0 ? <EmptyState title="No working sessions" text="Log working sets for this exercise to build a session history." /> : null}
+                    {selectedExerciseDetailSessions.slice(0, 6).map((session) => (
+                      <article className="session-card" key={`${session.date}-${session.day}`}>
+                        <div>
+                          <strong>{session.date}</strong>
+                          <span>{session.day} · {session.sets.length} sets</span>
+                        </div>
+                        <div>
+                          <strong>{formatNumber(session.totalVolume)}</strong>
+                          <span>volume</span>
+                        </div>
+                        <div>
+                          <strong>{formatNumber(session.maxWeight)} kg</strong>
+                          <span>top weight</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="detail-section">
+                  <div className="detail-section-heading">
+                    <h3>Recent sets</h3>
+                    <span className="pill">{selectedExerciseDetailWorkouts.length} logged</span>
+                  </div>
+                  <div className="set-list">
+                    {selectedExerciseDetailWorkouts.length === 0 ? <EmptyState title="No sets yet" text="Log a set for this exercise and it will show up here." /> : null}
+                    {selectedExerciseDetailWorkouts.slice(0, 10).map((workout) => (
+                      <article className="set-card" key={workout.id}>
+                        <div>
+                          <strong>{workout.date}</strong>
+                          <span>{workout.day} · set {workout.set_number} · {workout.set_type}</span>
+                        </div>
+                        <span>{formatNumber(workout.weight)} kg x {workout.reps}</span>
+                        <button className="ghost-button" type="button" onClick={() => startWorkoutEdit(workout)}>Edit</button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </>
+          ) : (
+            <EmptyState title="Exercise not found" text="Go back to the library and pick an exercise." />
+          )}
         </div>
         ) : null}
 
