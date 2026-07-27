@@ -214,6 +214,11 @@ function App() {
 
     const payload = buildWorkoutPayload(workoutForm);
 
+    if (workoutForm.date && !isValidDateString(workoutForm.date)) {
+      setError("Date must use YYYY-MM-DD format.");
+      return;
+    }
+
     if (!payload.exercise_id || payload.weight <= 0 || payload.reps <= 0) {
       setError("Exercise, weight, and reps are required for a workout set.");
       return;
@@ -491,11 +496,22 @@ function App() {
           <form className="stack-form workout-form" onSubmit={handleWorkoutSubmit}>
             <label>
               Date
-              <input
-                type="date"
-                value={workoutForm.date}
-                onChange={(event) => setWorkoutForm({ ...workoutForm, date: event.target.value })}
-              />
+              <div className="date-input-row">
+                <input
+                  inputMode="numeric"
+                  pattern="\d{4}-\d{2}-\d{2}"
+                  placeholder="YYYY-MM-DD"
+                  value={workoutForm.date}
+                  onChange={(event) => setWorkoutForm({ ...workoutForm, date: event.target.value })}
+                />
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setWorkoutForm({ ...workoutForm, date: todayDateString() })}
+                >
+                  Today
+                </button>
+              </div>
             </label>
             <label>
               Day
@@ -1023,6 +1039,30 @@ function convertWeightToKilograms(weight: number, unit: WeightUnit) {
   }
 
   return weight;
+}
+
+function todayDateString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDateString(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }
 
 function normalizeCategory(value: string): ExerciseCategory {
