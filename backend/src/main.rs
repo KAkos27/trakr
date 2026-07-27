@@ -13,7 +13,7 @@ use axum::{
 };
 use base64::{Engine as _, engine::general_purpose};
 use sqlx::postgres::PgPoolOptions;
-use std::{env, net::SocketAddr};
+use std::env;
 use tower_http::cors::CorsLayer;
 
 use crate::controller::{exercise_controller, workout_controller};
@@ -59,11 +59,12 @@ async fn main() -> Result<()> {
         .with_state(pool)
         .layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = format!("0.0.0.0:{port}");
 
     tracing::info!("listening on http://{addr}");
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())
