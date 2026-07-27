@@ -725,6 +725,10 @@ button:disabled {
     padding: 14px;
   }
 
+  .logout-button {
+    display: none;
+  }
+
   .hero-panel,
   .panel {
     border-radius: 24px;
